@@ -1,0 +1,2 @@
+aiogram==2.22
+keyboard==0.13.5
