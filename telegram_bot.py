@@ -31,10 +31,10 @@ def fetch_product_data(product_id):
     image_url = f'http://localhost:1337{image_relative_url}'
 
     return {
-      'title': title,
-      'description': description,
-      'price': price,
-      'image_url': image_url
+        'title': title,
+        'description': description,
+        'price': price,
+        'image_url': image_url
     }
 
 
@@ -43,6 +43,12 @@ def get_kb(products):
     for product in products:
         title = product['attributes']['title']
         kb.add(InlineKeyboardButton(title, callback_data=f'product_{product["id"]}'))
+    return kb
+
+
+def get_product_keyboard(product_id):
+    kb = InlineKeyboardMarkup()
+    kb.add(InlineKeyboardButton("Назад", callback_data='back_to_menu'))
     return kb
 
 
@@ -70,7 +76,16 @@ async def process_product_callback(callback_query: types.CallbackQuery):
         with io.BytesIO(photo_binary) as photo_stream:
             photo = InputFile(photo_stream, filename=f"{product_data['title']}.jpg")
             response_message = f"{title}\nЦена: {price}\n\n{description}"
-            await bot.send_photo(callback_query.from_user.id, photo, caption=response_message)
+
+            await bot.send_photo(callback_query.from_user.id, photo, caption=response_message, reply_markup=get_product_keyboard(product_id))
+
+
+@dp.callback_query_handler(lambda c: c.data == 'back_to_menu')
+async def back_to_menu(callback_query: types.CallbackQuery):
+    response = requests.get(base_url)
+    response.raise_for_status()
+    products_data = response.json()['data']
+    await bot.send_message(callback_query.from_user.id, 'Выберите товар:', reply_markup=get_kb(products_data))
 
 
 if __name__ == '__main__':
